@@ -6,5 +6,6 @@ permissionguard.sqlite3-shm
 permissionguard.sqlite3-wal
 dist/
 node_modules/
-
+.env
+.env.local
 .DS_Store
