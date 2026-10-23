@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#070A12] text-slate-100 font-sans;
+    background-image: 
+      radial-gradient(at 10% 10%, rgba(70, 229, 255, 0.05) 0px, transparent 40%),
+      radial-gradient(at 90% 20%, rgba(139, 124, 255, 0.06) 0px, transparent 45%),
+      radial-gradient(at 50% 90%, rgba(16, 185, 129, 0.04) 0px, transparent 40%);
+    background-attachment: fixed;
+    color-scheme: dark;
+  }
+}
+
+/* Custom dark scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B1020;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E294B;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2A3766;
+}
+
+/* Glass & Card Utilities */
+.pg-glass {
+  background: rgba(16, 22, 42, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(70, 229, 255, 0.1);
+}
+
+.pg-card {
+  background: #0B1020;
+  border: 1px solid #1E294B;
+  border-radius: 0.75rem;
+}
+
+.pg-card-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pg-card-hover:hover {
+  border-color: rgba(70, 229, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(3, 5, 12, 0.7), 0 0 15px -3px rgba(70, 229, 255, 0.15);
+}
+
+/* Grid background pattern */
+.pg-grid-bg {
+  background-size: 32px 32px;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+/* Smooth keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 0.4; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 4s ease-in-out infinite;
+}

@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.py[cod]
+permissionguard.sqlite3
+permissionguard.sqlite3-shm
+permissionguard.sqlite3-wal
+dist/
+node_modules/
+
+.DS_Store

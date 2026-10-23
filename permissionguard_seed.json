@@ -1,0 +1,715 @@
+{
+  "agents": [
+    {
+      "id": "AGT-8401",
+      "name": "Research Assistant",
+      "description": "Summarizes enterprise documentation, synthesizes technical briefs, and analyzes public market feeds.",
+      "environment": "production",
+      "status": "active",
+      "permittedCategories": [
+        "READ_DOCUMENT",
+        "API_INVOCATION"
+      ],
+      "assignedPolicies": [
+        "POL-READ-01",
+        "POL-EXPORT-04",
+        "POL-REVIEW-06"
+      ],
+      "lastActive": "2 minutes ago",
+      "totalRequests": 489,
+      "riskProfile": "LOW",
+      "avatarSeed": "research"
+    },
+    {
+      "id": "AGT-8402",
+      "name": "Email Workflow Agent",
+      "description": "Drafts customer communications, sends transactional updates, and orchestrates partner outreach.",
+      "environment": "production",
+      "status": "active",
+      "permittedCategories": [
+        "READ_DOCUMENT",
+        "SEND_EMAIL"
+      ],
+      "assignedPolicies": [
+        "POL-EMAIL-02",
+        "POL-READ-01"
+      ],
+      "lastActive": "5 minutes ago",
+      "totalRequests": 312,
+      "riskProfile": "MEDIUM",
+      "avatarSeed": "email"
+    },
+    {
+      "id": "AGT-8403",
+      "name": "Data Operations Agent",
+      "description": "Executes analytical transformations, warehouse indexing, and scheduled reporting pipeline exports.",
+      "environment": "production",
+      "status": "active",
+      "permittedCategories": [
+        "READ_DOCUMENT",
+        "UPDATE_RECORD",
+        "EXPORT_DATA",
+        "DATABASE_MUTATION"
+      ],
+      "assignedPolicies": [
+        "POL-EXPORT-04",
+        "POL-DB-05",
+        "POL-READ-01"
+      ],
+      "lastActive": "12 minutes ago",
+      "totalRequests": 890,
+      "riskProfile": "HIGH",
+      "avatarSeed": "data"
+    },
+    {
+      "id": "AGT-8404",
+      "name": "Administrative Agent",
+      "description": "Automates user directory onboarding, workspace role provisioning, and account lifecycle tickets.",
+      "environment": "staging",
+      "status": "restricted",
+      "permittedCategories": [
+        "READ_DOCUMENT",
+        "UPDATE_RECORD"
+      ],
+      "assignedPolicies": [
+        "POL-IAM-03",
+        "POL-READ-01"
+      ],
+      "lastActive": "45 minutes ago",
+      "totalRequests": 142,
+      "riskProfile": "CRITICAL",
+      "avatarSeed": "admin"
+    },
+    {
+      "id": "AGT-8405",
+      "name": "DevOps Infra Agent",
+      "description": "Monitors cloud infrastructure health, triggers auto-scaling policies, and rolls back anomalous deployments.",
+      "environment": "production",
+      "status": "active",
+      "permittedCategories": [
+        "READ_DOCUMENT",
+        "API_INVOCATION",
+        "SYSTEM_COMMAND"
+      ],
+      "assignedPolicies": [
+        "POL-IAM-03",
+        "POL-READ-01",
+        "POL-REVIEW-06"
+      ],
+      "lastActive": "1 hour ago",
+      "totalRequests": 567,
+      "riskProfile": "HIGH",
+      "avatarSeed": "devops"
+    }
+  ],
+  "policies": [
+    {
+      "id": "POL-READ-01",
+      "name": "SAFE_READ_OPERATIONS",
+      "description": "Permits autonomous read-only operations targeting certified non-sensitive resources and documentation repositories.",
+      "scope": "RESOURCE_READ",
+      "ruleType": "ALLOW_LIST",
+      "riskThreshold": "LOW",
+      "priority": 10,
+      "enabled": true,
+      "rules": [
+        {
+          "id": "RULE-R01",
+          "name": "Public & Verified Internal Repos",
+          "condition": "resource.path MATCHES \"s3://knowledge-base/*\" OR \"doc://enterprise/*\"",
+          "actionOutcome": "ALLOW",
+          "explanation": "Resource belongs to the certified low-risk enterprise knowledge base."
+        },
+        {
+          "id": "RULE-R02",
+          "name": "Exclude Vault & PII Buckets",
+          "condition": "resource.path CONTAINS \"pii\" OR \"credential\" OR \"vault\"",
+          "actionOutcome": "DENY",
+          "explanation": "Read access to cryptographic vault or raw PII records is strictly blocked by read baseline."
+        }
+      ],
+      "defaultDecision": "REQUIRE_APPROVAL",
+      "lastUpdated": "2026-10-21 14:30 UTC"
+    },
+    {
+      "id": "POL-EMAIL-02",
+      "name": "SENSITIVE_OUTBOUND_COMMUNICATION",
+      "description": "Enforces human authorization whenever an agent attempts to transmit emails to external domains or large distribution lists.",
+      "scope": "EXTERNAL_COMMUNICATION",
+      "ruleType": "CONTEXTUAL_HEURISTIC",
+      "riskThreshold": "MEDIUM",
+      "priority": 30,
+      "enabled": true,
+      "rules": [
+        {
+          "id": "RULE-E01",
+          "name": "Internal Domain Whitelist",
+          "condition": "recipient.domain == \"internal.enterprise.com\" AND recipient.count == 1",
+          "actionOutcome": "ALLOW",
+          "explanation": "Single recipient within verified internal organizational boundary."
+        },
+        {
+          "id": "RULE-E02",
+          "name": "External or Bulk Outreach",
+          "condition": "recipient.domain != \"internal.enterprise.com\" OR recipient.count > 5",
+          "actionOutcome": "REQUIRE_APPROVAL",
+          "explanation": "Outbound dispatch targets external entities or broad recipient list; human verification required."
+        },
+        {
+          "id": "RULE-E03",
+          "name": "Mass Email Guardrail",
+          "condition": "recipient.count > 500",
+          "actionOutcome": "DENY",
+          "explanation": "Bulk broadcast exceeding 500 recipients exceeds autonomous agent threshold."
+        }
+      ],
+      "defaultDecision": "REQUIRE_APPROVAL",
+      "lastUpdated": "2026-10-22 09:15 UTC"
+    },
+    {
+      "id": "POL-IAM-03",
+      "name": "RESTRICTED_PERMISSION_CHANGES",
+      "description": "Strictly governs identity role modifications, credential issuance, and security boundary adjustments.",
+      "scope": "ACCESS_CONTROL",
+      "ruleType": "DENY_LIST",
+      "riskThreshold": "CRITICAL",
+      "priority": 100,
+      "enabled": true,
+      "rules": [
+        {
+          "id": "RULE-I01",
+          "name": "Privilege Escalation Block",
+          "condition": "operation == \"iam:AttachUserPolicy\" OR \"iam:PutUserPolicy\" OR role == \"AdministratorAccess\"",
+          "actionOutcome": "DENY",
+          "explanation": "Autonomous modification of administrative IAM roles is prohibited under Zero Trust policy."
+        },
+        {
+          "id": "RULE-I02",
+          "name": "Temporary Token Review",
+          "condition": "operation == \"sts:AssumeRole\" AND duration <= 3600",
+          "actionOutcome": "REQUIRE_APPROVAL",
+          "explanation": "Short-lived role assumption requires security engineer sign-off."
+        }
+      ],
+      "defaultDecision": "DENY",
+      "lastUpdated": "2026-10-20 18:00 UTC"
+    },
+    {
+      "id": "POL-EXPORT-04",
+      "name": "SENSITIVE_DATA_EXPORT",
+      "description": "Controls bulk exfiltration, customer CSV downloads, and analytical exports exceeding baseline limits.",
+      "scope": "DATA_EXFILTRATION",
+      "ruleType": "RISK_THRESHOLD",
+      "riskThreshold": "HIGH",
+      "priority": 50,
+      "enabled": true,
+      "rules": [
+        {
+          "id": "RULE-X01",
+          "name": "High-Volume Row Extraction",
+          "condition": "rowsExported > 1000 OR containsFinancialData == true",
+          "actionOutcome": "REQUIRE_APPROVAL",
+          "explanation": "Data payload contains >1,000 sensitive records or financial fields; requires compliance signoff."
+        },
+        {
+          "id": "RULE-X02",
+          "name": "Unencrypted Destination",
+          "condition": "destination.encrypted == false",
+          "actionOutcome": "DENY",
+          "explanation": "Egress to unencrypted object targets is permanently prohibited."
+        }
+      ],
+      "defaultDecision": "REQUIRE_APPROVAL",
+      "lastUpdated": "2026-10-22 16:40 UTC"
+    },
+    {
+      "id": "POL-DB-05",
+      "name": "BATCH_DATABASE_MUTATION",
+      "description": "Requires human approval before agents execute bulk SQL writes, schema drops, or high-cardinality updates.",
+      "scope": "DATABASE_WRITE",
+      "ruleType": "RISK_THRESHOLD",
+      "riskThreshold": "HIGH",
+      "priority": 40,
+      "enabled": true,
+      "rules": [
+        {
+          "id": "RULE-D01",
+          "name": "Mass Record Mutation",
+          "condition": "mutation.type == \"UPDATE\" AND estimatedRows > 50",
+          "actionOutcome": "REQUIRE_APPROVAL",
+          "explanation": "Batch mutation impacts 50+ database rows; requires operational approval."
+        },
+        {
+          "id": "RULE-D02",
+          "name": "Destructive DDL Block",
+          "condition": "mutation.statement CONTAINS \"DROP\" OR \"TRUNCATE\"",
+          "actionOutcome": "DENY",
+          "explanation": "Destructive DDL statements are blocked unconditionally for AI agents."
+        }
+      ],
+      "defaultDecision": "REQUIRE_APPROVAL",
+      "lastUpdated": "2026-10-19 11:20 UTC"
+    },
+    {
+      "id": "POL-REVIEW-06",
+      "name": "UNCLASSIFIED_ACTION_REVIEW",
+      "description": "Routes supported action categories without a dedicated allow rule to a human reviewer.",
+      "scope": "UNCLASSIFIED_ACTIONS",
+      "ruleType": "CONTEXTUAL_HEURISTIC",
+      "riskThreshold": "MEDIUM",
+      "priority": 20,
+      "enabled": true,
+      "rules": [
+        {
+          "id": "RULE-DEFAULT-REVIEW",
+          "name": "Unclassified Action Review",
+          "condition": "action.category HAS NO DEDICATED AUTONOMOUS ALLOW RULE",
+          "actionOutcome": "REQUIRE_APPROVAL",
+          "explanation": "Actions without a dedicated allow rule wait for human review."
+        }
+      ],
+      "defaultDecision": "REQUIRE_APPROVAL",
+      "lastUpdated": "2026-10-23 10:30 UTC"
+    }
+  ],
+  "requests": [
+    {
+      "id": "REQ-9101",
+      "agentId": "AGT-8401",
+      "agentName": "Research Assistant",
+      "actionType": "READ_DOCUMENT",
+      "resource": "doc://enterprise/handbooks/security-standards-2026.md",
+      "requestedOperation": "Read documentation markdown file",
+      "context": {
+        "justification": "Synthesizing employee onboarding guidelines for Q4 refresh.",
+        "sensitivityLevel": "LOW",
+        "scope": "READ_ONLY"
+      },
+      "riskLevel": "LOW",
+      "applicablePolicyId": "POL-READ-01",
+      "applicablePolicyName": "SAFE_READ_OPERATIONS",
+      "decision": "ALLOW",
+      "decisionReason": "Resource matches public enterprise handbook whitelist; no sensitive PII present.",
+      "matchedRuleId": "RULE-R01",
+      "createdAt": "2026-10-23 07:54:12 UTC",
+      "executionStatus": "NOT_EXECUTED",
+      "auditEventId": "AUD-5501"
+    },
+    {
+      "id": "REQ-9102",
+      "agentId": "AGT-8402",
+      "agentName": "Email Workflow Agent",
+      "actionType": "SEND_EMAIL",
+      "resource": "smtp://gateway.mail.com/send",
+      "requestedOperation": "Dispatch contract proposal to external vendor",
+      "context": {
+        "recipient": "procurement@acme-vendor-partner.org",
+        "subject": "Agreement Renewal Terms & Fee Structure",
+        "justification": "Fulfilling automated procurement re-engagement trigger.",
+        "sensitivityLevel": "HIGH"
+      },
+      "riskLevel": "MEDIUM",
+      "applicablePolicyId": "POL-EMAIL-02",
+      "applicablePolicyName": "SENSITIVE_OUTBOUND_COMMUNICATION",
+      "decision": "REQUIRE_APPROVAL",
+      "decisionReason": "Outbound email destination is outside corporate boundary and contains commercial agreement attachment.",
+      "matchedRuleId": "RULE-E02",
+      "createdAt": "2026-10-23 07:58:30 UTC",
+      "executionStatus": "NOT_EXECUTED",
+      "auditEventId": "AUD-5502"
+    },
+    {
+      "id": "REQ-9103",
+      "agentId": "AGT-8404",
+      "agentName": "Administrative Agent",
+      "actionType": "MODIFY_PERMISSIONS",
+      "resource": "iam://roles/AdministratorAccess",
+      "requestedOperation": "Attach AdministratorAccess policy to service-worker-09",
+      "context": {
+        "targetRole": "service-worker-09",
+        "justification": "Agent encountered access denied error during nightly backup job and attempted elevation.",
+        "sensitivityLevel": "CRITICAL"
+      },
+      "riskLevel": "CRITICAL",
+      "applicablePolicyId": "POL-IAM-03",
+      "applicablePolicyName": "RESTRICTED_PERMISSION_CHANGES",
+      "decision": "DENY",
+      "decisionReason": "Zero-Trust rule RULE-I01 prohibits autonomous agents from granting AdministratorAccess permissions.",
+      "matchedRuleId": "RULE-I01",
+      "createdAt": "2026-10-23 08:02:11 UTC",
+      "executionStatus": "NOT_EXECUTED",
+      "auditEventId": "AUD-5503"
+    },
+    {
+      "id": "REQ-9104",
+      "agentId": "AGT-8403",
+      "agentName": "Data Operations Agent",
+      "actionType": "EXPORT_DATA",
+      "resource": "s3://analytics-lake/exports/q3-customer-financials.parquet",
+      "requestedOperation": "Export customer revenue breakdown to CSV for offline analysis",
+      "context": {
+        "rowsAffected": 14500,
+        "sensitivityLevel": "HIGH",
+        "containsFinancialData": true,
+        "justification": "Generating quarterly business review metrics."
+      },
+      "riskLevel": "HIGH",
+      "applicablePolicyId": "POL-EXPORT-04",
+      "applicablePolicyName": "SENSITIVE_DATA_EXPORT",
+      "decision": "REQUIRE_APPROVAL",
+      "decisionReason": "Payload exceeds 1,000 records threshold and contains sensitive financial metrics.",
+      "matchedRuleId": "RULE-X01",
+      "createdAt": "2026-10-23 08:05:44 UTC",
+      "executionStatus": "NOT_EXECUTED",
+      "auditEventId": "AUD-5504"
+    },
+    {
+      "id": "REQ-9105",
+      "agentId": "AGT-8401",
+      "agentName": "Research Assistant",
+      "actionType": "READ_DOCUMENT",
+      "resource": "s3://vault-prod/credentials/stripe_live_keys.json",
+      "requestedOperation": "Inspect API configuration to identify integration endpoint",
+      "context": {
+        "justification": "Looking for payment webhook signature key.",
+        "sensitivityLevel": "CRITICAL"
+      },
+      "riskLevel": "CRITICAL",
+      "applicablePolicyId": "POL-READ-01",
+      "applicablePolicyName": "SAFE_READ_OPERATIONS",
+      "decision": "DENY",
+      "decisionReason": "Rule RULE-R02 strictly blocks reading cryptographic vaults and live secrets.",
+      "matchedRuleId": "RULE-R02",
+      "createdAt": "2026-10-23 08:07:19 UTC",
+      "executionStatus": "NOT_EXECUTED",
+      "auditEventId": "AUD-5505"
+    },
+    {
+      "id": "REQ-9106",
+      "agentId": "AGT-8403",
+      "agentName": "Data Operations Agent",
+      "actionType": "DATABASE_MUTATION",
+      "resource": "postgres://db-cluster/users",
+      "requestedOperation": "Bulk update user tier flags from FREE to PRO",
+      "context": {
+        "rowsAffected": 120,
+        "statement": "UPDATE users SET tier = \"PRO\" WHERE signup_promo = \"OCT2026\"",
+        "justification": "Applying promotional upgrade campaign results.",
+        "sensitivityLevel": "MEDIUM"
+      },
+      "riskLevel": "MEDIUM",
+      "applicablePolicyId": "POL-DB-05",
+      "applicablePolicyName": "BATCH_DATABASE_MUTATION",
+      "decision": "REQUIRE_APPROVAL",
+      "decisionReason": "Update affects 120 rows (>50 row limit under RULE-D01); human reviewer confirmation needed.",
+      "matchedRuleId": "RULE-D01",
+      "createdAt": "2026-10-23 08:09:55 UTC",
+      "executionStatus": "NOT_EXECUTED",
+      "auditEventId": "AUD-5506"
+    },
+    {
+      "id": "REQ-9107",
+      "agentId": "AGT-8402",
+      "agentName": "Email Workflow Agent",
+      "actionType": "SEND_EMAIL",
+      "resource": "smtp://gateway.mail.com/send",
+      "requestedOperation": "Send internal password reset reminder to staff member",
+      "context": {
+        "recipient": "sarah.j@internal.enterprise.com",
+        "justification": "Automated 90-day password rotation reminder.",
+        "sensitivityLevel": "LOW"
+      },
+      "riskLevel": "LOW",
+      "applicablePolicyId": "POL-EMAIL-02",
+      "applicablePolicyName": "SENSITIVE_OUTBOUND_COMMUNICATION",
+      "decision": "ALLOW",
+      "decisionReason": "Matches RULE-E01: Verified internal organization recipient domain with non-sensitive standard notification.",
+      "matchedRuleId": "RULE-E01",
+      "createdAt": "2026-10-23 08:11:02 UTC",
+      "executionStatus": "NOT_EXECUTED",
+      "auditEventId": "AUD-5507"
+    },
+    {
+      "id": "REQ-9108",
+      "agentId": "AGT-8405",
+      "agentName": "DevOps Infra Agent",
+      "actionType": "SYSTEM_COMMAND",
+      "resource": "k8s://cluster-primary/namespaces/worker/scale",
+      "requestedOperation": "Scale replica deployment worker-ingest from 3 to 8",
+      "context": {
+        "justification": "Queue depth exceeded 5,000 jobs during traffic spike.",
+        "sensitivityLevel": "LOW"
+      },
+      "riskLevel": "LOW",
+      "applicablePolicyId": "POL-REVIEW-06",
+      "applicablePolicyName": "UNCLASSIFIED_ACTION_REVIEW",
+      "decision": "REQUIRE_APPROVAL",
+      "decisionReason": "System commands are routed to a human reviewer; no command is executed by this demo.",
+      "matchedRuleId": "RULE-U01",
+      "createdAt": "2026-10-23 08:12:40 UTC",
+      "executionStatus": "NOT_EXECUTED",
+      "auditEventId": "AUD-5508"
+    }
+  ],
+  "approvals": [
+    {
+      "id": "APP-101",
+      "requestId": "REQ-9102",
+      "request": {
+        "id": "REQ-9102",
+        "agentId": "AGT-8402",
+        "agentName": "Email Workflow Agent",
+        "actionType": "SEND_EMAIL",
+        "resource": "smtp://gateway.mail.com/send",
+        "requestedOperation": "Dispatch contract proposal to external vendor",
+        "context": {
+          "recipient": "procurement@acme-vendor-partner.org",
+          "subject": "Agreement Renewal Terms & Fee Structure",
+          "justification": "Fulfilling automated procurement re-engagement trigger.",
+          "sensitivityLevel": "HIGH"
+        },
+        "riskLevel": "MEDIUM",
+        "applicablePolicyId": "POL-EMAIL-02",
+        "applicablePolicyName": "SENSITIVE_OUTBOUND_COMMUNICATION",
+        "decision": "REQUIRE_APPROVAL",
+        "decisionReason": "Outbound email destination is outside corporate boundary and contains commercial agreement attachment.",
+        "matchedRuleId": "RULE-E02",
+        "createdAt": "2026-10-23 07:58:30 UTC",
+        "executionStatus": "NOT_EXECUTED",
+        "auditEventId": "AUD-5502"
+      },
+      "assignedReviewerRole": "SecOps Lead / Legal Counsel",
+      "submittedAt": "2026-10-23 07:58:30 UTC",
+      "urgency": "ELEVATED",
+      "status": "PENDING"
+    },
+    {
+      "id": "APP-102",
+      "requestId": "REQ-9104",
+      "request": {
+        "id": "REQ-9104",
+        "agentId": "AGT-8403",
+        "agentName": "Data Operations Agent",
+        "actionType": "EXPORT_DATA",
+        "resource": "s3://analytics-lake/exports/q3-customer-financials.parquet",
+        "requestedOperation": "Export customer revenue breakdown to CSV for offline analysis",
+        "context": {
+          "rowsAffected": 14500,
+          "sensitivityLevel": "HIGH",
+          "containsFinancialData": true,
+          "justification": "Generating quarterly business review metrics."
+        },
+        "riskLevel": "HIGH",
+        "applicablePolicyId": "POL-EXPORT-04",
+        "applicablePolicyName": "SENSITIVE_DATA_EXPORT",
+        "decision": "REQUIRE_APPROVAL",
+        "decisionReason": "Payload exceeds 1,000 records threshold and contains sensitive financial metrics.",
+        "matchedRuleId": "RULE-X01",
+        "createdAt": "2026-10-23 08:05:44 UTC",
+        "executionStatus": "NOT_EXECUTED",
+        "auditEventId": "AUD-5504"
+      },
+      "assignedReviewerRole": "Data Protection Officer",
+      "submittedAt": "2026-10-23 08:05:44 UTC",
+      "urgency": "CRITICAL",
+      "status": "PENDING"
+    },
+    {
+      "id": "APP-103",
+      "requestId": "REQ-9106",
+      "request": {
+        "id": "REQ-9106",
+        "agentId": "AGT-8403",
+        "agentName": "Data Operations Agent",
+        "actionType": "DATABASE_MUTATION",
+        "resource": "postgres://db-cluster/users",
+        "requestedOperation": "Bulk update user tier flags from FREE to PRO",
+        "context": {
+          "rowsAffected": 120,
+          "statement": "UPDATE users SET tier = \"PRO\" WHERE signup_promo = \"OCT2026\"",
+          "justification": "Applying promotional upgrade campaign results.",
+          "sensitivityLevel": "MEDIUM"
+        },
+        "riskLevel": "MEDIUM",
+        "applicablePolicyId": "POL-DB-05",
+        "applicablePolicyName": "BATCH_DATABASE_MUTATION",
+        "decision": "REQUIRE_APPROVAL",
+        "decisionReason": "Update affects 120 rows (>50 row limit under RULE-D01); human reviewer confirmation needed.",
+        "matchedRuleId": "RULE-D01",
+        "createdAt": "2026-10-23 08:09:55 UTC",
+        "executionStatus": "NOT_EXECUTED",
+        "auditEventId": "AUD-5506"
+      },
+      "assignedReviewerRole": "Database Reliability Engineer",
+      "submittedAt": "2026-10-23 08:09:55 UTC",
+      "urgency": "STANDARD",
+      "status": "PENDING"
+    },
+    {
+      "id": "APP-104",
+      "requestId": "REQ-9108",
+      "request": {
+        "id": "REQ-9108",
+        "agentId": "AGT-8405",
+        "agentName": "DevOps Infra Agent",
+        "actionType": "SYSTEM_COMMAND",
+        "resource": "k8s://cluster-primary/namespaces/worker/scale",
+        "requestedOperation": "Scale replica deployment worker-ingest from 3 to 8",
+        "context": {
+          "justification": "Queue depth exceeded 5,000 jobs during traffic spike.",
+          "sensitivityLevel": "LOW"
+        },
+        "riskLevel": "LOW",
+        "applicablePolicyId": "POL-REVIEW-06",
+        "applicablePolicyName": "UNCLASSIFIED_ACTION_REVIEW",
+        "decision": "REQUIRE_APPROVAL",
+        "decisionReason": "System commands are routed to a human reviewer; no command is executed by this demo.",
+        "matchedRuleId": "RULE-U01",
+        "createdAt": "2026-10-23 08:12:40 UTC",
+        "executionStatus": "NOT_EXECUTED",
+        "auditEventId": "AUD-5508"
+      },
+      "assignedReviewerRole": "Infrastructure Security Reviewer",
+      "submittedAt": "2026-10-23 08:12:40 UTC",
+      "urgency": "STANDARD",
+      "status": "PENDING"
+    }
+  ],
+  "audit": [
+    {
+      "id": "AUD-5501",
+      "timestamp": "2026-10-23 07:54:12 UTC",
+      "requestId": "REQ-9101",
+      "agentId": "AGT-8401",
+      "agentName": "Research Assistant",
+      "eventType": "EVALUATION_COMPLETED",
+      "decision": "ALLOW",
+      "policyReference": "POL-READ-01 (RULE-R01)",
+      "actor": "POLICY_ENGINE_AUTOMATION",
+      "outcome": "Seeded demonstration event: policy evaluation allowed the request; execution status is simulated and no external token was issued.",
+      "details": {
+        "resource": "doc://enterprise/handbooks/security-standards-2026.md",
+        "actionType": "READ_DOCUMENT",
+        "riskLevel": "LOW"
+      }
+    },
+    {
+      "id": "AUD-5502",
+      "timestamp": "2026-10-23 07:58:30 UTC",
+      "requestId": "REQ-9102",
+      "agentId": "AGT-8402",
+      "agentName": "Email Workflow Agent",
+      "eventType": "APPROVAL_REQUESTED",
+      "decision": "REQUIRE_APPROVAL",
+      "policyReference": "POL-EMAIL-02 (RULE-E02)",
+      "actor": "POLICY_ENGINE_GATEWAY",
+      "outcome": "Enqueued in SecOps human approval queue. Execution halted at gateway.",
+      "details": {
+        "recipient": "procurement@acme-vendor-partner.org",
+        "actionType": "SEND_EMAIL",
+        "riskLevel": "MEDIUM"
+      }
+    },
+    {
+      "id": "AUD-5503",
+      "timestamp": "2026-10-23 08:02:11 UTC",
+      "requestId": "REQ-9103",
+      "agentId": "AGT-8404",
+      "agentName": "Administrative Agent",
+      "eventType": "POLICY_EVALUATION",
+      "decision": "DENY",
+      "policyReference": "POL-IAM-03 (RULE-I01)",
+      "actor": "ZERO_TRUST_ENFORCER",
+      "outcome": "Operation blocked. Administrative privilege escalation attempted by non-human agent.",
+      "details": {
+        "targetRole": "iam://roles/AdministratorAccess",
+        "actionType": "MODIFY_PERMISSIONS",
+        "riskLevel": "CRITICAL"
+      }
+    },
+    {
+      "id": "AUD-5504",
+      "timestamp": "2026-10-23 08:05:44 UTC",
+      "requestId": "REQ-9104",
+      "agentId": "AGT-8403",
+      "agentName": "Data Operations Agent",
+      "eventType": "APPROVAL_REQUESTED",
+      "decision": "REQUIRE_APPROVAL",
+      "policyReference": "POL-EXPORT-04 (RULE-X01)",
+      "actor": "POLICY_ENGINE_GATEWAY",
+      "outcome": "Enqueued in Data Protection Officer queue. Bulk financial extract paused.",
+      "details": {
+        "rows": 14500,
+        "resource": "s3://analytics-lake/exports/q3-customer-financials.parquet",
+        "riskLevel": "HIGH"
+      }
+    },
+    {
+      "id": "AUD-5505",
+      "timestamp": "2026-10-23 08:07:19 UTC",
+      "requestId": "REQ-9105",
+      "agentId": "AGT-8401",
+      "agentName": "Research Assistant",
+      "eventType": "POLICY_EVALUATION",
+      "decision": "DENY",
+      "policyReference": "POL-READ-01 (RULE-R02)",
+      "actor": "SECRETS_FIREWALL",
+      "outcome": "Access denied. Attempt to read live cryptographic vault rejected.",
+      "details": {
+        "resource": "s3://vault-prod/credentials/stripe_live_keys.json",
+        "actionType": "READ_DOCUMENT",
+        "riskLevel": "CRITICAL"
+      }
+    },
+    {
+      "id": "AUD-5506",
+      "timestamp": "2026-10-23 08:09:55 UTC",
+      "requestId": "REQ-9106",
+      "agentId": "AGT-8403",
+      "agentName": "Data Operations Agent",
+      "eventType": "APPROVAL_REQUESTED",
+      "decision": "REQUIRE_APPROVAL",
+      "policyReference": "POL-DB-05 (RULE-D01)",
+      "actor": "POLICY_ENGINE_GATEWAY",
+      "outcome": "Enqueued for Database Reliability Engineer review due to row mutation threshold.",
+      "details": {
+        "rowsAffected": 120,
+        "resource": "postgres://db-cluster/users",
+        "riskLevel": "MEDIUM"
+      }
+    },
+    {
+      "id": "AUD-5507",
+      "timestamp": "2026-10-23 08:11:02 UTC",
+      "requestId": "REQ-9107",
+      "agentId": "AGT-8402",
+      "agentName": "Email Workflow Agent",
+      "eventType": "EVALUATION_COMPLETED",
+      "decision": "ALLOW",
+      "policyReference": "POL-EMAIL-02 (RULE-E01)",
+      "actor": "POLICY_ENGINE_AUTOMATION",
+      "outcome": "Internal notification satisfied heuristic. Action permitted.",
+      "details": {
+        "recipient": "sarah.j@internal.enterprise.com",
+        "actionType": "SEND_EMAIL",
+        "riskLevel": "LOW"
+      }
+    },
+    {
+      "id": "AUD-5508",
+      "timestamp": "2026-10-23 08:12:40 UTC",
+      "requestId": "REQ-9108",
+      "agentId": "AGT-8405",
+      "agentName": "DevOps Infra Agent",
+      "eventType": "EVALUATION_COMPLETED",
+      "decision": "REQUIRE_APPROVAL",
+      "policyReference": "POL-REVIEW-06 (RULE-U01)",
+      "actor": "POLICY_ENGINE_AUTOMATION",
+      "outcome": "System command held for review; no cluster connection or command execution occurred.",
+      "details": {
+        "resource": "k8s://cluster-primary/namespaces/worker/scale",
+        "riskLevel": "LOW"
+      }
+    }
+  ]
+}
