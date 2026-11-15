@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+permissionguard.sqlite3
+permissionguard.sqlite3-shm
+permissionguard.sqlite3-wal
