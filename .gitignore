@@ -1,6 +1,7 @@
 .venv/
 __pycache__/
 *.py[cod]
+.pytest_cache/
 permissionguard.sqlite3
 permissionguard.sqlite3-shm
 permissionguard.sqlite3-wal

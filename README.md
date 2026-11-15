@@ -40,3 +40,10 @@ API documentation is available at `http://127.0.0.1:8010/docs`; the health endpo
 ## Older GestureLink project files
 
 This folder retains the separate GestureLink AI backend and model files (`app.py`, gesture data/model files, and `README_GestureLink_legacy.md`). The PermissionGuard launcher does not start that service, load its model, connect to MQTT, or control hardware.
+
+## Earlier Flask prototype
+
+The original Flask policy demo is preserved in `backend/`, with its separate
+React app in `frontend/` and policy tests in `tests/`. See
+[FLASK-PROTOTYPE.md](FLASK-PROTOTYPE.md) for its setup and verification commands.
+The current application above continues to use `permissionguard_api.py` and `src/`.
